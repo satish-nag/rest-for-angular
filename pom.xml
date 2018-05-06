@@ -14,6 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>1.8</java.version>
     <start-class>com.test.spring.App</start-class>
+    <dockerfile-maven-version>1.3.6</dockerfile-maven-version>
   </properties>
   <parent>
     <groupId>org.springframework.boot</groupId>
@@ -70,6 +71,29 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
+        <plugin>
+            <groupId>com.spotify</groupId>
+            <artifactId>dockerfile-maven-plugin</artifactId>
+            <version>${dockerfile-maven-version}</version>
+            <executions>
+                <execution>
+                    <id>default</id>
+                    <goals>
+                        <goal>build</goal>
+                        <goal>push</goal>
+                    </goals>
+                </execution>
+            </executions>
+            <configuration>
+                <username>satishnaga</username>
+                <password>Satish@143</password>
+                <repository>satishnaga/rest-for-ang</repository>
+                <tag>${project.version}</tag>
+                <buildArgs>
+                    <JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
+                </buildArgs>
+            </configuration>
+        </plugin>
     </plugins>
   </build>
 </project>
