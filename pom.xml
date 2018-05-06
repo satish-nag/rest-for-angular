@@ -71,13 +71,14 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
-        <plugin>
+        <!--<plugin>
             <groupId>com.spotify</groupId>
             <artifactId>dockerfile-maven-plugin</artifactId>
             <version>${dockerfile-maven-version}</version>
             <executions>
                 <execution>
                     <id>default</id>
+                    <phase>install</phase>
                     <goals>
                         <goal>build</goal>
                         <goal>push</goal>
@@ -85,15 +86,15 @@
                 </execution>
             </executions>
             <configuration>
-                <username>satishnaga</username>
-                <password>Satish@143</password>
                 <repository>satishnaga/rest-for-ang</repository>
+                <contextDirectory>${project.basedir}</contextDirectory>
                 <tag>${project.version}</tag>
                 <buildArgs>
+                    <BUILD_DIR>${project.build.directory}</BUILD_DIR>
                     <JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
                 </buildArgs>
             </configuration>
-        </plugin>
+        </plugin>-->
     </plugins>
   </build>
 </project>
