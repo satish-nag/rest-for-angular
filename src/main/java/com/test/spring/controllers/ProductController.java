@@ -34,6 +34,8 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Root;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,6 +67,11 @@ public class ProductController {
     @GetMapping(path="oneProduct")
     public Product getOneProduct(@RequestParam int id){
         return productRepository.findOne(id);
+    }
+
+    @GetMapping(path = "hostname")
+    public String getHostname() throws UnknownHostException {
+        return InetAddress.getLocalHost().getHostName();
     }
 
     @GetMapping(path = "test")
