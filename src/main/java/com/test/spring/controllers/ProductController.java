@@ -85,6 +85,7 @@ public class ProductController {
         query.where(criteriaBuilder.gt(productId,1));
         entityManagerFactory.createEntityManager().createQuery(query).getResultList().forEach(o->{
             System.out.println(Arrays.stream(o).reduce((a, b)-> a+","+b).get());
+            System.out.println();
         });
     }
 }
