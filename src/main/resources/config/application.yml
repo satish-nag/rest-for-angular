@@ -1,0 +1,61 @@
+server:
+  port: 6789
+  ssl:
+    key-store: classpath:config/keystore.jks
+    key-store-password: Mber@1234
+    key-alias: tomcat
+    key-store-type: JKS
+    key-password: Mber@1234
+
+javax:
+  net:
+    ssl:
+      trustStore: classpath:config/keystore.jks
+      trustStorePassword: Mber@1234
+      trustStoreType: JKS
+
+spring:
+  data:
+    cassandra:
+      keyspace-name: cassandra_practice
+      contact-points: localhost
+      port: 9042
+      compression: none
+      username: cassandra
+      password: cassandra
+  #activemq:
+   # broker-url: tcp://localhost:61616
+    #pool:
+     # enabled: true
+  jms:
+    listener:
+      concurrency: 5
+  jpa:
+    #show-sql: true
+    properties:
+      hibernate:
+        show_sql: true
+  application:
+    name: rest-for-angular
+    admin:
+      enabled: true
+  #zipkin:
+    #base-url: http://localhost:6789/
+  jmx:
+    enabled: true
+    default-domain: rest-for-angular
+  mvc:
+    servlet:
+      load-on-startup: 1
+    favicon:
+      enabled: false
+    #static-path-pattern: /static/*
+logging:
+  level:
+    com:
+      test: debug
+  file: test.log
+  path: c:\d_disk
+springfox.documentation.swagger.v2.path: /swagger.yaml
+#debug: true
+
