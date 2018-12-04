@@ -1,0 +1,7 @@
+---
+applications:
+- name: rest-for-angular-new
+  path: ./target/rest-for-angular-1.0-SNAPSHOT.jar
+  memory: 768M
+  instances: 1
+  random-route: true
