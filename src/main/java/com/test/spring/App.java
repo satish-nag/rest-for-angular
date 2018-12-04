@@ -7,13 +7,19 @@ import com.test.spring.entities.Product;
 import com.test.spring.repositories.AthletesRepository;
 import com.test.spring.repositories.CityRepository;
 import com.test.spring.repositories.ProductRepository;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.conn.util.PublicSuffixMatcherLoader;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.http.util.EntityUtils;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
@@ -48,6 +54,8 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import javax.jms.ConnectionFactory;
 import javax.net.ssl.SSLContext;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.*;
@@ -130,16 +138,10 @@ public class App
         System.setProperty("javax.net.ssl.trustStorePassword", "Mber@1234");
         System.setProperty("javax.net.ssl.keyStore",applicationContext.getResource("classpath:config/keystore.jks").getURL().getPath());
         System.setProperty("javax.net.ssl.keyStorePassword", "Mber@1234");*/
-        KeyStore keyStore = KeyStore.getInstance("JKS");
-        InputStream inputStream = applicationContext.getResource("classpath:config/keystore.jks").getInputStream();
-        keyStore.load(inputStream,"Mber@1234".toCharArray());
-        SSLContext sslContext = SSLContexts.custom().loadKeyMaterial(keyStore,"Mber@1234".toCharArray()).build();
-        SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
-                sslContext.getSocketFactory(),
-                new String[] { "TLSv1","TLSv1.2" },
-                null,
-                new DefaultHostnameVerifier(PublicSuffixMatcherLoader.getDefault()));
-        CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(sslsf).build();
+        SSLContext sslcontext = SSLContexts.custom()
+                .loadTrustMaterial(applicationContext.getResource("classpath:config/keystore.jks").getURL(),"Mber@1234".toCharArray())
+                .build();
+        CloseableHttpClient httpClient = HttpClients.custom().useSystemProperties().setSSLContext(sslcontext).build();
         return new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
     }
 
@@ -169,4 +171,5 @@ public class App
 
         return threadPoolTaskExecutor;
     }
+
 }
