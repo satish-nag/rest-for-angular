@@ -28,11 +28,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.SessionCallback;
 import org.springframework.util.MimeType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import javax.jms.JMSException;
+import javax.jms.Session;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -76,14 +79,15 @@ public class ProductController {
         jmsTemplate.convertAndSend(destination,message);
     }
 
-    @GetMapping(path = "allProducts",produces = {MediaType.APPLICATION_XML_VALUE,MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(path = "allProducts",produces = {MediaType.APPLICATION_JSON_VALUE})
     public List<Product> getAllProducts(HttpServletRequest req){
         List<Product> products = new ArrayList<>();
         productRepository.findAll().forEach(products::add);
         LOG.info("products "+products);
-		UriComponents url = ServletUriComponentsBuilder.fromServletMapping(req).path("product/oneProduct").queryParam("id","3").build();
+        //commented for testing while using SpringBootTest.WebEnvironment.MOCK as port is not there this resttemplate will not work
+		/*UriComponents url = ServletUriComponentsBuilder.fromServletMapping(req).path("product/oneProduct").queryParam("id","3").build();
         System.out.println(url.toString());
-        restTemplate.getForObject(url.toString(),Product.class);
+        restTemplate.getForObject(url.toString(),Product.class);*/
         return products;
     }
 

@@ -133,7 +133,7 @@ public class App
     }
 
     @Bean
-    public RestTemplate restTemplate(ApplicationContext applicationContext) throws NoSuchAlgorithmException, IOException, KeyStoreException, CertificateException, UnrecoverableKeyException, KeyManagementException {
+    public RestTemplate restTemplate(ApplicationContext applicationContext) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         /*System.setProperty("javax.net.ssl.trustStore",applicationContext.getResource("classpath:config/keystore.jks").getURL().getPath());
         System.setProperty("javax.net.ssl.trustStorePassword", "Mber@1234");
         System.setProperty("javax.net.ssl.keyStore",applicationContext.getResource("classpath:config/keystore.jks").getURL().getPath());
