@@ -29,8 +29,6 @@ import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfigurat
 import org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.jms.activemq.ActiveMQAutoConfiguration;
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.MockBeans;
 import org.springframework.cloud.sleuth.sampler.AlwaysSampler;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;

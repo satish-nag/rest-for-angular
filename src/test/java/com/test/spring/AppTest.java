@@ -4,6 +4,8 @@ import com.test.spring.entities.City;
 import com.test.spring.entities.Product;
 import com.test.spring.repositories.CityRepository;
 import com.test.spring.repositories.ProductRepository;
+import org.cassandraunit.spring.CassandraUnitDependencyInjectionTestExecutionListener;
+import org.cassandraunit.spring.EmbeddedCassandra;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,7 +18,9 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cassandra.core.CqlTemplate;
 import org.springframework.cassandra.core.ResultSetExtractor;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -33,8 +37,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Unit test for simple App.
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@SpringBootTest(properties = {"spring.data.cassndra.contact-points=localhost","spring.data.cassndra=9142"},webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
+@EmbeddedCassandra(timeout = 25000)
+@TestExecutionListeners(listeners = {
+        CassandraUnitDependencyInjectionTestExecutionListener.class,
+        DependencyInjectionTestExecutionListener.class}
+)
 //@WebMvcTest
 public class AppTest
 {
@@ -46,6 +55,7 @@ public class AppTest
     MockMvc mockMvc;
 
     @SpyBean
+    @Autowired
     CqlTemplate cqlTemplate;
 
     // use this only when you are using SpringBootTest.WebEnvironment.RANDOM_PORT,SpringBootTest.WebEnvironment.DEFINED_PORT
@@ -81,8 +91,9 @@ public class AppTest
 
     @Before
     public void populateData(){
-        cityRepository.save(Arrays.asList(hyderabad,bengaluru,chennai,delhi,pune,mumbai));
-        productRepository.save(Arrays.asList(product1,product2,product3));
+        /*cityRepository.save(Arrays.asList(hyderabad,bengaluru,chennai,delhi,pune,mumbai));
+        productRepository.save(Arrays.asList(product1,product2,product3));*/
+        cqlTemplate.query("delete from person where id=4");
     }
 
 
@@ -98,7 +109,7 @@ public class AppTest
     }
 
     @Test
-    //@Ignorev
+    //@Ignore
     public void testJms() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/product/postMsg/test").content("this is a test message"))
                 .andDo(print())
@@ -111,7 +122,7 @@ public class AppTest
         mockMvc.perform(get("/product/dum"))
                 .andDo(print())
                 .andExpect(status().isOk());
-
+        System.out.println("cluster name: "+cqlTemplate.getSession().getCluster().getClusterName());
         Mockito.verify(cqlTemplate,Mockito.times(2)).query(Matchers.any(String.class),Matchers.any(),Matchers.any(ResultSetExtractor.class));
     }
 
