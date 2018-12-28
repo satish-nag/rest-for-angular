@@ -54,6 +54,9 @@ public class AsyncTest {
     @Autowired
     CqlTemplate cqlTemplate;
 
+    @Autowired
+    TaskInterface taskInterface;
+
 
     @Test
     public void test1() throws InterruptedException {
