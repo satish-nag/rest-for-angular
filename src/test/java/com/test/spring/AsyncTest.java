@@ -49,7 +49,7 @@ import java.util.concurrent.TimeoutException;
 public class AsyncTest {
 
     @Autowired
-    TaskInterface task,task2;
+    TaskInterface task,task2,task4;
 
     @Autowired
     CqlTemplate cqlTemplate;
