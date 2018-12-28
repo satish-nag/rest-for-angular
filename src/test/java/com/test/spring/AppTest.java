@@ -54,6 +54,8 @@ public class AppTest
     @Autowired
     MockMvc mockMvc;
 
+    MockMvc mockMvc1;
+
     @SpyBean
     @Autowired
     CqlTemplate cqlTemplate;
