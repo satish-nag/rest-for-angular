@@ -6,6 +6,7 @@ import org.cassandraunit.spring.EmbeddedCassandra;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
@@ -16,6 +17,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.boot.test.mock.mockito.SpyBeans;
 import org.springframework.cassandra.core.CqlTemplate;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AdviceMode;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -28,6 +30,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
 
 import java.util.concurrent.CompletableFuture;
@@ -35,7 +38,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringRunner.class)
 @ContextConfiguration(classes = {CassandraAutoConfiguration.class, CassandraDataAutoConfiguration.class})
 @EmbeddedCassandra(timeout = 25000)
 @CassandraDataSet(keyspace = "cassandra_practice",value = {"dataset.cql"})
@@ -43,20 +46,20 @@ import java.util.concurrent.TimeoutException;
         CassandraUnitDependencyInjectionTestExecutionListener.class,
         DependencyInjectionTestExecutionListener.class}
 )
-@EnableAsync
+@EnableAsync(proxyTargetClass = true)
 @TestPropertySource(properties = {"spring.data.cassandra.contact-points=127.0.0.1","spring.data.cassandra.port=9142","spring.data.cassandra.keyspace-name=cassandra_practice","spring.data.cassandra.username=cassandra","spring.data.cassandra.password=cassandra"})
-@SpyBean(AsyncTest.TaskInterface.class)
+@SpyBean(AsyncTest.Task.class)
 public class AsyncTest {
 
     @Autowired
-    TaskInterface task,task2,task4;
+    TaskInterface task,task2,task3,task4;
 
     @Autowired
     CqlTemplate cqlTemplate;
 
 
     @Test
-    public void test1() throws InterruptedException {
+    public void test1() throws Exception {
         System.out.println(Thread.currentThread().getName());
         CompletableFuture<String> stringCompletableFuture = timeoutFuture(task.execute(),1);
         CompletableFuture<String> stringCompletableFuture1 = timeoutFuture(task2.execute(),5);
@@ -80,7 +83,7 @@ public class AsyncTest {
             completableFuture.completeExceptionally(e);
         }
 
-        Mockito.verify(task,Mockito.times(2)).execute();
+        Mockito.verify(task,Mockito.times(200)).execute();
 
         //Thread.sleep(11000);
 
@@ -98,7 +101,6 @@ public class AsyncTest {
     }
 
     @Configuration
-    @EnableAsync
     static class TestConfig {
 
         @Bean
@@ -118,11 +120,12 @@ public class AsyncTest {
     }
 
     @Component
-    static class Task implements TaskInterface{
+    static class Task implements TaskInterface2{
 
         @Override
-        public CompletableFuture<String> callMethod(){
+        public CompletableFuture<String> callMethod() throws Exception {
             System.out.println("current thread name "+Thread.currentThread().getName());
+            test2();
             try {
                 TimeUnit.SECONDS.sleep(10);
             } catch (InterruptedException e) {
@@ -131,15 +134,26 @@ public class AsyncTest {
             System.out.println("after sleeping +++++++++++++++++");
             return CompletableFuture.completedFuture("Thread Execution completed");
         }
+
+        @Override
+        public void test2() throws Exception {
+            System.out.println("test2 method2");
+            //throw new Exception();
+        }
     }
 
 
     interface TaskInterface{
         @Async
-        default CompletableFuture<String> execute(){
+        default CompletableFuture<String> execute() throws Exception {
             return callMethod();
         }
 
-        CompletableFuture<String> callMethod();
+        CompletableFuture<String> callMethod() throws Exception;
+    }
+
+    interface TaskInterface2 extends TaskInterface{
+
+        void test2() throws Exception;
     }
 }
