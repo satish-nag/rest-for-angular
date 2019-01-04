@@ -4,16 +4,21 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jackson.JsonComponent;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 @JsonComponent
-public class ResponseDeserializer extends JsonDeserializer<Response>{
+public class PayloadDeserializer extends JsonDeserializer<Payload>{
 
     @Autowired
     Map<String,Payload> payloads;
@@ -22,20 +27,16 @@ public class ResponseDeserializer extends JsonDeserializer<Response>{
     ObjectMapper objectMapper;
 
     @Override
-    public Response deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
-        Response response = new Response();
+    public Payload deserialize(JsonParser jsonParser, DeserializationContext ctxt) throws IOException, JsonProcessingException {
         TreeNode treeNode = jsonParser.readValueAsTree();
+        AtomicReference<Payload> payload = new AtomicReference<>();
         if(treeNode.isObject()) {
             ObjectNode objectNode = (ObjectNode) treeNode;
             objectNode.fields().forEachRemaining(stringJsonNodeEntry -> {
                 try {
-                    if ("header".equalsIgnoreCase(stringJsonNodeEntry.getKey())) {
-                        response.setHeader(objectMapper.readValue(stringJsonNodeEntry.getValue().toString(), Header.class));
-                    }
-                    else if(payloads.get(stringJsonNodeEntry.getKey())!=null){
+                    if (payloads.get(stringJsonNodeEntry.getKey()) != null) {
                         Payload payloadType = payloads.get(stringJsonNodeEntry.getKey());
-                        Payload payload = objectMapper.readValue(stringJsonNodeEntry.getValue().toString(), payloadType.getClass());
-                        response.setPayload(payload);
+                        payload.set(objectMapper.readValue(stringJsonNodeEntry.getValue().toString(), payloadType.getClass()));
                     }
                 } catch (JsonParseException e) {
                     e.printStackTrace();
@@ -46,6 +47,6 @@ public class ResponseDeserializer extends JsonDeserializer<Response>{
                 }
             });
         }
-        return response;
+        return payload.get();
     }
 }

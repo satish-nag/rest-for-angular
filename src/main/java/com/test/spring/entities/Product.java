@@ -3,6 +3,7 @@ package com.test.spring.entities;
 import org.hibernate.Session;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
+import org.springframework.stereotype.Component;
 
 import javax.persistence.*;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -10,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+@Component
 @Entity
 @XmlRootElement
 public class Product {

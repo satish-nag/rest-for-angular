@@ -1,58 +1,34 @@
 package com.test.spring.controllers;
 
-import com.datastax.driver.core.Row;
 import com.test.spring.entities.Product;
+import com.test.spring.model.FraudPointPayload;
+import com.test.spring.model.Header;
+import com.test.spring.model.Response;
 import com.test.spring.repositories.CityRepository;
 import com.test.spring.repositories.ProductRepository;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.routing.HttpRoute;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import io.swagger.annotations.ApiOperation;
 import org.apache.log4j.Logger;
-import org.hibernate.mapping.Collection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cassandra.core.CqlTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.*;
 import org.springframework.jms.core.JmsTemplate;
-import org.springframework.jms.core.SessionCallback;
-import org.springframework.util.MimeType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import javax.jms.JMSException;
-import javax.jms.Session;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Root;
-import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.logging.Level;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-import org.springframework.web.util.UriComponents;
-import java.net.URI;
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
 import javax.validation.constraints.Min;
 
 import static org.apache.log4j.Logger.getLogger;
@@ -131,4 +107,49 @@ public class ProductController {
         voidCompletableFuture.get();
         return "success";
     }
+
+    @ApiOperation(value = "this operation returns Response", response = Response.class)
+    @GetMapping(value = "/test2",produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response getResponse(HttpServletRequest httpServletRequest){
+        FraudPointPayload fraudPointPayload = new FraudPointPayload();
+        fraudPointPayload.getProps().put("attr1","1");
+        fraudPointPayload.getProps().put("attr2","2");
+        fraudPointPayload.getProps().put("attr3","3");
+        fraudPointPayload.getProps().put("attr4","4");
+
+        Header header = new Header();
+        header.setStatusCode("3001");
+        header.setStatusMessage("processed");
+
+        Response response = new Response();
+        response.setHeader(header);
+        response.setPayload(fraudPointPayload);
+        URI uri = ServletUriComponentsBuilder.fromContextPath(httpServletRequest).path("/product/test3").build().toUri();
+        try {
+            RequestEntity<Void> requestEntity = RequestEntity.get(uri).build();
+            ResponseEntity<String> forEntity = restTemplate.exchange(requestEntity, String.class);
+            HttpStatus statusCode = forEntity.getStatusCode();
+        }catch (HttpClientErrorException | HttpServerErrorException e){ // 4xx and 5xx error codes are handled here
+            HttpStatus statusCode = e.getStatusCode();
+            System.out.println(statusCode==HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        catch (UnknownHttpStatusCodeException e){ // other error codes handled here
+            e.printStackTrace();
+        }
+        catch (ResourceAccessException e){ // IOException are handled here like SocketTimeout
+            e.printStackTrace();
+        }
+        catch (Exception e){ // application exceptions are handled here
+            e.printStackTrace();
+        }
+        return response;
+    }
+
+    @GetMapping(value = "/test3",produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> test3() throws InterruptedException {
+        Thread.sleep(2000);
+        return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT).build();
+    }
+
+
 }
