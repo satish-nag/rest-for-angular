@@ -115,7 +115,7 @@ public class App
             /*jmsTemplate.convertAndSend("test","satish");*/
             /*Athletes oneAthlete = athletesRepository.findOne(757107967);
             System.out.println(oneAthlete);*/
-            FraudPointPayload fraudPointPayload = new FraudPointPayload();
+            /*FraudPointPayload fraudPointPayload = new FraudPointPayload();
             fraudPointPayload.getProps().put("attr1","1");
             fraudPointPayload.getProps().put("attr2","2");
             fraudPointPayload.getProps().put("attr3","3");
@@ -159,7 +159,7 @@ public class App
             Response response2 = objectMapper.readValue(valueAsString, Response.class);
             System.out.println(response2);
             String valueAsString1 = objectMapper.writeValueAsString(response2);
-            System.out.println(valueAsString1);
+            System.out.println(valueAsString1);*/
         };
     }
 

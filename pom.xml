@@ -149,7 +149,27 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <profiles>
+    <profile>
+      <id>dev</id>
+      <properties>
+        <myActiveProfile>dev</myActiveProfile>
+      </properties>
+    </profile>
+    <profile>
+      <id>prod</id>
+      <properties>
+        <myActiveProfile>prod</myActiveProfile>
+      </properties>
+    </profile>
+  </profiles>
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>
@@ -183,6 +203,11 @@
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.7.5.201505241946</version>
+        <configuration>
+          <excludes>
+            <exclude>com/test/spring/model/*</exclude>
+          </excludes>
+        </configuration>
         <executions>
           <!--
               Prepares the property pointing to the JaCoCo runtime agent which

@@ -38,7 +38,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-@RunWith(SpringRunner.class)
+/*@RunWith(SpringRunner.class)
 @ContextConfiguration(classes = {CassandraAutoConfiguration.class, CassandraDataAutoConfiguration.class})
 @EmbeddedCassandra(timeout = 25000)
 @CassandraDataSet(keyspace = "cassandra_practice",value = {"dataset.cql"})
@@ -48,10 +48,10 @@ import java.util.concurrent.TimeoutException;
 )
 @EnableAsync(proxyTargetClass = true)
 @TestPropertySource(properties = {"spring.data.cassandra.contact-points=127.0.0.1","spring.data.cassandra.port=9142","spring.data.cassandra.keyspace-name=cassandra_practice","spring.data.cassandra.username=cassandra","spring.data.cassandra.password=cassandra"})
-@SpyBean(AsyncTest.Task.class)
+@SpyBean(AsyncTest.Task.class)*/
 public class AsyncTest {
 
-    @Autowired
+    /*@Autowired
     TaskInterface task,task2,task3,task4;
 
     @Autowired
@@ -158,5 +158,5 @@ public class AsyncTest {
     interface TaskInterface2 extends TaskInterface{
 
         void test2() throws Exception;
-    }
+    }*/
 }

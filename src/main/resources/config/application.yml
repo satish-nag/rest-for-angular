@@ -23,6 +23,8 @@ spring:
       compression: none
       username: cassandra
       password: cassandra
+  profiles:
+    active: @myActiveProfile@
   #activemq:
    # broker-url: tcp://localhost:61616
     #pool:
