@@ -1,103 +1,72 @@
-package com.test.spring.jms.config;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.util.StringUtils;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Test {
-    static Map<String, List<String>> data = new HashMap<>();
-    static int k=0;
+    private static int depth=0;
+    private static List<String> columnNames=new ArrayList<>();
+    private static Map<String,Map<Integer,String>> columnData = new HashMap<>();
+
+    private static ObjectMapper objectMapper=new ObjectMapper();
+
     public static void main(String[] args) throws IOException {
-        JsonNode jsonNode = new ObjectMapper().readTree(new File("src/main/resources/input.json"));
+        convertToJson();
+        System.out.println(columnNames.stream().sorted().collect(Collectors.joining(",")));
+        IntStream.range(0, depth).forEach(value -> {
+            columnNames.stream().sorted().forEach(columnName -> {
+                if(columnData.get(columnName).get(value)!=null)
+                    System.out.print(columnData.get(columnName).get(value));
+                System.out.print(",");
+            });
+            System.out.println();
+        });
+    }
+
+    public static void convertToJson() throws IOException {
+        JsonNode jsonNode = objectMapper.readTree(new File("src/main/resources/input.json"));
         if(jsonNode.isArray()){
-            flatRootArray(jsonNode,"",0);
+            Iterator<JsonNode> elements = jsonNode.elements();
+            while(elements.hasNext()){
+                JsonNode next = elements.next();
+                addHeader(next,depth);
+                depth++;
+            }
         }
         else if(jsonNode.isObject()){
-            flatObject(jsonNode,"",0);
+            addHeader(jsonNode,depth);
+            depth++;
         }
-
-        writeToFile();
-
     }
 
-    private static void writeToFile() {
-        StringBuffer headers = new StringBuffer();
-        Map<Integer,String> body = new HashMap<>();
-        data.keySet().stream().sorted().forEach(s -> {
-            headers.append(s+",");
-            List<String> strings = data.get(s);
-            for(int i=0;i<strings.size();i++){
-                if(StringUtils.isEmpty(body.get(i))){
-                    body.put(i,strings.get(i));
-                }else{
-                    body.put(i,body.get(i)+","+strings.get(i));
+    private static void addHeader(JsonNode next,int rows) {
+        if(next.isObject()){
+            Iterator<Map.Entry<String, JsonNode>> fields = next.fields();
+            while (fields.hasNext()){
+                Map.Entry<String, JsonNode> jsonNodeEntry = fields.next();
+                if(jsonNodeEntry.getValue().isValueNode()){
+                    if(!columnNames.contains(jsonNodeEntry.getKey())) {
+                        columnNames.add(jsonNodeEntry.getKey());
+                        columnData.put(jsonNodeEntry.getKey(), new HashMap<>());
+                    }
+                    columnData.get(jsonNodeEntry.getKey()).put(rows,jsonNodeEntry.getValue().toString());
                 }
-            }
-        });
-        try(BufferedWriter bw = new BufferedWriter(new FileWriter("src/main/resources/output.csv"))){
-            bw.write(headers.toString());
-            bw.newLine();
-            for (String s : body.values()) {
-                bw.write(s);
-                bw.newLine();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void flatRootArray(JsonNode value, String prefix, int index) {
-        Iterator<JsonNode> elements = value.elements();
-        while(elements.hasNext()){
-            JsonNode next = elements.next();
-            if(next.isArray())
-                flatRootArray(next,prefix,index);
-            else{
-                flatObject(next,prefix,index);
-            }
-            k++;
-        }
-    }
-
-    public static void flatArray(JsonNode value, String prefix, int index){
-        Iterator<JsonNode> elements = value.elements();
-        while(elements.hasNext()){
-            JsonNode next = elements.next();
-            if(next.isArray()) flatArray(next,prefix,index);
-            else{
-                flatObject(next,prefix,index++);
-            }
-        }
-    }
-
-    public static void flatObject(JsonNode jsonNode, String prefix, int index){
-        Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
-        while(fields.hasNext()){
-            Map.Entry<String, JsonNode> next = fields.next();
-            String key = next.getKey();
-            JsonNode value = next.getValue();
-            key=prefix+"_"+key+"_"+index;
-            if(value.isArray()) {
-                flatArray(value,key,index);
-            }
-            else if(value.isObject()) {
-                flatObject(value,key,index);
-            }
-            else if(value.isValueNode()){
-                if(data.get(key)==null){
-                    List<String> strings = new ArrayList<>();
-                    if(k>0) IntStream.range(0,k).forEach(s->strings.add(""));
-                    strings.add(k,value.textValue());
-                    data.put(key,strings);
-                }else {
-                    data.get(key).add(value.textValue());
+                else if(jsonNodeEntry.getValue().isArray()){
+                    Iterator<JsonNode> elements = jsonNodeEntry.getValue().elements();
+                    int rows1 = rows;
+                    while (elements.hasNext()){
+                        addHeader(elements.next(),rows1++);
+                        depth =depth <rows1-1?rows1-1:depth;
+                    }
+                }
+                else if(jsonNodeEntry.getValue().isObject()){
+                    int rows1 = rows;
+                    addHeader(jsonNodeEntry.getValue(),rows1++);
+                    depth =depth <rows1-1?rows1-1:Test.depth;
                 }
             }
         }
