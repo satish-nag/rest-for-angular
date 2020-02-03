@@ -69,6 +69,11 @@ public class Test {
                     convertJsonToCsvUtil(jsonNodeEntry.getValue(),rows);
                 }
             }
+        }else if(next.isArray()){
+            Iterator<JsonNode> elements = next.elements();
+            while(elements.hasNext()){
+                convertJsonToCsvUtil(elements.next(),rows);
+            }
         }
     }
 }
