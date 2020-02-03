@@ -1,21 +1,39 @@
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Test {
-    private static int depth=0;
-    private static List<String> columnNames=new ArrayList<>();
-    private static Map<String,Map<Integer,String>> columnData = new HashMap<>();
+    private int depth=0;
+    private List<String> columnNames=new ArrayList<>();
+    private Map<String,Map<Integer,String>> columnData = new HashMap<>();
 
     private static ObjectMapper objectMapper=new ObjectMapper();
 
     public static void main(String[] args) throws IOException {
-        convertToJson();
+        new Test().convertJsonToCsv(Files.readAllLines(Paths.get("src/main/resources/input.json")).stream().collect(Collectors.joining(System.lineSeparator())));
+    }
+
+    public void convertJsonToCsv(String jsonString) throws IOException {
+        JsonNode jsonNode = objectMapper.readTree(jsonString);
+        if(jsonNode.isArray()){
+            Iterator<JsonNode> elements = jsonNode.elements();
+            while(elements.hasNext()){
+                JsonNode next = elements.next();
+                convertJsonToCsvUtil(next,depth);
+                depth++;
+            }
+        }
+        else if(jsonNode.isObject()){
+            convertJsonToCsvUtil(jsonNode,depth);
+            depth++;
+        }
+
         System.out.println(columnNames.stream().sorted().collect(Collectors.joining(",")));
         IntStream.range(0, depth).forEach(value -> {
             columnNames.stream().sorted().forEach(columnName -> {
@@ -27,23 +45,7 @@ public class Test {
         });
     }
 
-    public static void convertToJson() throws IOException {
-        JsonNode jsonNode = objectMapper.readTree(new File("src/main/resources/input.json"));
-        if(jsonNode.isArray()){
-            Iterator<JsonNode> elements = jsonNode.elements();
-            while(elements.hasNext()){
-                JsonNode next = elements.next();
-                addHeader(next,depth);
-                depth++;
-            }
-        }
-        else if(jsonNode.isObject()){
-            addHeader(jsonNode,depth);
-            depth++;
-        }
-    }
-
-    private static void addHeader(JsonNode next,int rows) {
+    private void convertJsonToCsvUtil(JsonNode next, int rows) {
         if(next.isObject()){
             Iterator<Map.Entry<String, JsonNode>> fields = next.fields();
             while (fields.hasNext()){
@@ -59,14 +61,12 @@ public class Test {
                     Iterator<JsonNode> elements = jsonNodeEntry.getValue().elements();
                     int rows1 = rows;
                     while (elements.hasNext()){
-                        addHeader(elements.next(),rows1++);
+                        convertJsonToCsvUtil(elements.next(),rows1++);
                         depth =depth <rows1-1?rows1-1:depth;
                     }
                 }
                 else if(jsonNodeEntry.getValue().isObject()){
-                    int rows1 = rows;
-                    addHeader(jsonNodeEntry.getValue(),rows1++);
-                    depth =depth <rows1-1?rows1-1:Test.depth;
+                    convertJsonToCsvUtil(jsonNodeEntry.getValue(),rows);
                 }
             }
         }
