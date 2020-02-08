@@ -1,0 +1,25 @@
+POST https://localhost:6789/person/add
+Content-Type: application/json
+
+[
+  {
+    "firstName": "john",
+    "lastName": "doe",
+    "company": "google",
+    "address": "california",
+    "email": "john.doe@gmail.com"
+  },
+  {
+    "firstName": "peter",
+    "lastName": "keating",
+    "company": "apple",
+    "address": "new york",
+    "email": "peter.keating@gmail.com"
+  }
+]
+
+###
+
+GET https://localhost:6789/person/getPersons
+
+###

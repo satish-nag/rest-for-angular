@@ -7,8 +7,13 @@ import com.test.spring.model.Response;
 import com.test.spring.repositories.CityRepository;
 import com.test.spring.repositories.ProductRepository;
 import io.swagger.annotations.ApiOperation;
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Ehcache;
+import net.sf.ehcache.Element;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.ehcache.EhCacheCacheManager;
 import org.springframework.cassandra.core.CqlTemplate;
 import org.springframework.http.*;
 import org.springframework.jms.core.JmsTemplate;
@@ -47,8 +52,12 @@ public class ProductController {
     @Autowired EntityManagerFactory entityManagerFactory;
     @Autowired RestTemplate restTemplate;
     @Autowired JmsTemplate jmsTemplate;
-    @Autowired CqlTemplate cqlTemplate;
+    /*@Autowired*/ CqlTemplate cqlTemplate;
     @Autowired DummyTask dummyTask1,dummyTask2;
+    //@Autowired
+    EhCacheCacheManager ehCacheCacheManager;
+    @Autowired
+    CacheManager cacheManager;
 
     @PostMapping(path = "postMsg/{destination}")
     public void sendMsgToJms(@PathVariable String destination,@RequestBody String message){
@@ -151,5 +160,18 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT).build();
     }
 
+    @GetMapping("/test4/{time}")
+    public String test4(@PathVariable int time){
+        Ehcache tokenCache = cacheManager.getEhcache("tokenCache");
+        Element token = tokenCache.get("token");
+        if(token==null){
+            System.out.println("token is null adding token to cache");
+            token = new Element("token", "1234");
+            token.setTimeToLive(time);
+            tokenCache.put(token);
+        }
+
+        return (String) token.getObjectValue();
+    }
 
 }

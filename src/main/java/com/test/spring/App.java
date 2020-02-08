@@ -1,5 +1,9 @@
 package com.test.spring;
 
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.HostDistance;
+import com.datastax.driver.core.PoolingOptions;
+import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -13,6 +17,8 @@ import com.test.spring.model.MainPayload;
 import com.test.spring.model.Response;
 import com.test.spring.repositories.CityRepository;
 import com.test.spring.repositories.ProductRepository;
+import net.sf.ehcache.Ehcache;
+import org.apache.commons.beanutils.ConvertUtilsBean;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
@@ -23,10 +29,20 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
+import org.springframework.boot.autoconfigure.cassandra.ClusterBuilderCustomizer;
+import org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.cassandra.CassandraRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
+import org.springframework.boot.jta.bitronix.PoolingConnectionFactoryBean;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.ehcache.EhCacheCacheManager;
+import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;
+import org.springframework.cache.ehcache.EhCacheManagerUtils;
+import org.springframework.cassandra.config.PoolingOptionsFactoryBean;
 import org.springframework.cloud.sleuth.sampler.AlwaysSampler;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -37,6 +53,7 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.*;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -47,11 +64,10 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.security.*;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static springfox.documentation.builders.PathSelectors.regex;
 import static springfox.documentation.builders.RequestHandlerSelectors.basePackage;
@@ -60,7 +76,8 @@ import static springfox.documentation.builders.RequestHandlerSelectors.basePacka
  * Hello world!
  *
  */
-@SpringBootApplication(exclude = {MongoAutoConfiguration.class, MongoDataAutoConfiguration.class, MongoRepositoriesAutoConfiguration.class}) //,CassandraAutoConfiguration.class,CassandraDataAutoConfiguration.class, CassandraRepositoriesAutoConfiguration.class
+//@SpringBootApplication(exclude = {MongoAutoConfiguration.class, MongoDataAutoConfiguration.class, MongoRepositoriesAutoConfiguration.class ,CassandraAutoConfiguration.class,CassandraDataAutoConfiguration.class, CassandraRepositoriesAutoConfiguration.class})
+@SpringBootApplication(exclude = {MongoAutoConfiguration.class, MongoDataAutoConfiguration.class, MongoRepositoriesAutoConfiguration.class})
 //@EnableZipkinServer
 @EnableAspectJAutoProxy
 @EnableSwagger2
@@ -68,7 +85,7 @@ import static springfox.documentation.builders.RequestHandlerSelectors.basePacka
 /*@ComponentScan("com.test.spring")
 @EntityScan("com.test.spring")
 @EnableJpaRepositories("com.test.spring")*/
-public class App
+public class App implements ClusterBuilderCustomizer
 {
 
     public static void main( String[] args )
@@ -90,8 +107,10 @@ public class App
                                         CityRepository cityRepository,
                                         ObjectMapper objectMapper,
                                         /*JmsTemplate jmsTemplate,*/
-                                        DefaultJmsListenerContainerFactory messageListenerContainer/*,
-                                        AthletesRepository athletesRepository*/){
+                                        DefaultJmsListenerContainerFactory messageListenerContainer,/*,
+                                        AthletesRepository athletesRepository*/
+                                        Cluster cluster,
+                                        NamedParameterJdbcTemplate namedParameterJdbcTemplate){
         return (args) -> {
             City hyderabad = new City("Hyderabad");
             City bengaluru = new City("Bengaluru");
@@ -112,6 +131,8 @@ public class App
                     Arrays.asList(delhi,pune,mumbai));
 
             productRepository.save(Arrays.asList(product1,product2,product3));
+
+
             /*jmsTemplate.convertAndSend("test","satish");*/
             /*Athletes oneAthlete = athletesRepository.findOne(757107967);
             System.out.println(oneAthlete);*/
@@ -160,6 +181,11 @@ public class App
             System.out.println(response2);
             String valueAsString1 = objectMapper.writeValueAsString(response2);
             System.out.println(valueAsString1);*/
+            Map<String,Object> map = new HashMap<>();
+            map.put("prop1",1);
+            map.put("prop2","2");
+
+            System.out.println(objectMapper.writeValueAsString(map));
         };
     }
 
@@ -175,15 +201,15 @@ public class App
 
     @Bean
     public RestTemplate restTemplate(ApplicationContext applicationContext) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-        /*System.setProperty("javax.net.ssl.trustStore",applicationContext.getResource("classpath:config/keystore.jks").getURL().getPath());
+        System.setProperty("javax.net.ssl.trustStore",applicationContext.getResource("classpath:config/keystore.jks").getURL().getPath());
         System.setProperty("javax.net.ssl.trustStorePassword", "Mber@1234");
         System.setProperty("javax.net.ssl.keyStore",applicationContext.getResource("classpath:config/keystore.jks").getURL().getPath());
-        System.setProperty("javax.net.ssl.keyStorePassword", "Mber@1234");*/
-        SSLContext sslcontext = SSLContexts.custom()
+        System.setProperty("javax.net.ssl.keyStorePassword", "Mber@1234");
+        /*SSLContext sslcontext = SSLContexts.custom()
                 .loadTrustMaterial(applicationContext.getResource("classpath:config/keystore.jks").getURL(),"Mber@1234".toCharArray())
-                .build();
+                .build();*/
         RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(1000).build();
-        CloseableHttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).useSystemProperties().setSSLContext(sslcontext).build();
+        CloseableHttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).useSystemProperties()/*.setSSLContext(sslcontext)*/.build();
         RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory(httpClient));
         List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors = new ArrayList<>();
         clientHttpRequestInterceptors.add(new ClientHttpRequestInterceptor() {
@@ -203,6 +229,26 @@ public class App
         return restTemplate;
     }
 
+    /*@Bean
+    public EhCacheManagerFactoryBean ehCacheManagerFactoryBean(){
+        EhCacheManagerFactoryBean ehCacheManagerFactoryBean = new EhCacheManagerFactoryBean();
+        ehCacheManagerFactoryBean.setShared(true);
+        return ehCacheManagerFactoryBean;
+    }
+
+    @Bean
+    public EhCacheCacheManager cacheManager(){
+        return new EhCacheCacheManager(ehCacheManagerFactoryBean().getObject());
+    }*/
+
+    @Bean
+    public net.sf.ehcache.CacheManager cacheManager(){
+        net.sf.ehcache.CacheManager cacheManager = EhCacheManagerUtils.buildCacheManager();
+        Ehcache tokenCache = cacheManager.addCacheIfAbsent("tokenCache");
+        tokenCache.getCacheConfiguration().setMemoryStoreEvictionPolicy("FIFO");
+        return cacheManager;
+    }
+
     @Bean
     public AlwaysSampler alwaysSampler() {
         return new AlwaysSampler();
@@ -218,7 +264,7 @@ public class App
     }
 
     @Bean
-    public TaskExecutor taskExecutor(){
+    public TaskExecutor taskExecutor() throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
         threadPoolTaskExecutor.setCorePoolSize(10);
         threadPoolTaskExecutor.setMaxPoolSize(20);
@@ -226,7 +272,7 @@ public class App
         threadPoolTaskExecutor.setQueueCapacity(20);
         threadPoolTaskExecutor.setWaitForTasksToCompleteOnShutdown(true);
         threadPoolTaskExecutor.initialize();
-
+        convertValue(Class.forName("java.lang.Integer"),"12",Class.forName("java.lang.String"));
         return threadPoolTaskExecutor;
     }
 
@@ -246,5 +292,17 @@ public class App
         return HttpClients.custom().useSystemProperties().setSSLContext(sslContext).build();
     }*/
 
+    public <T> T convertValue(Class<T> clazz, String str,Class<?>... parameterTypes) throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchMethodException {
+        return (T)clazz.getConstructor(parameterTypes).newInstance(str);
+    }
 
+    @Override
+    public void customize(Cluster.Builder clusterBuilder) {
+        PoolingOptions poolingOptions = new PoolingOptions();
+        DCAwareRoundRobinPolicy dcAwareRoundRobinPolicy = DCAwareRoundRobinPolicy.builder().build();
+        poolingOptions
+                .setConnectionsPerHost(HostDistance.LOCAL,4,10)
+                .setConnectionsPerHost(HostDistance.REMOTE,4,10);
+        clusterBuilder.withPoolingOptions(poolingOptions).withLoadBalancingPolicy(dcAwareRoundRobinPolicy);
+    }
 }

@@ -37,7 +37,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class DummyTask {
     private static final Logger log = getLogger(DummyTask.class);
 
-    @Autowired
+    //@Autowired
     CqlTemplate cqlTemplate;
 
     @Async("taskExecutor")

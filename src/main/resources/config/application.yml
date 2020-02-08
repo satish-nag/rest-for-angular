@@ -23,8 +23,6 @@ spring:
       compression: none
       username: cassandra
       password: cassandra
-  profiles:
-    active: @myActiveProfile@
   #activemq:
    # broker-url: tcp://localhost:61616
     #pool:
@@ -52,10 +50,14 @@ spring:
     favicon:
       enabled: false
     #static-path-pattern: /static/*
+  datasource:
+    data: classpath:data.sql
 logging:
   level:
     com:
       test: debug
+    net:
+      sf: debug
   file: test.log
   path: c:\d_disk
 springfox.documentation.swagger.v2.path: /swagger.yaml

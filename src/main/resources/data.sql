@@ -1,0 +1,1 @@
+create table person(firstname varchar(20),lastName varchar(20),address varchar(20),company varchar(20),email varchar(50));
